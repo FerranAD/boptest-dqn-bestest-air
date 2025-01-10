@@ -1,6 +1,6 @@
 # ⚡🏡 HVAC control with DQN and BOPTEST ⚡🏡
 
-Welcome to the **HVAC control with DQN** project! This repository demonstrates how to use the Deep Q-Network (DQN) algorithm from [Stable-Baselines3](https://stable-baselines3.readthedocs.io/) to optimize a building's HVAC system in a custom Gym environment provided by the [BOPTEST project](https://ibpsa.github.io/project1-boptest/software/).
+Welcome to the **HVAC control with DQN** project! This repository demonstrates how to use the Deep Q-Network (DQN) algorithm from [Stable-Baselines3](https://stable-baselines3.readthedocs.io/) to optimize a building's HVAC system in a custom Gym environment provided by the [BOPTEST project](https://ibpsa.github.io/project1-boptest/software/). More specifically, the test chosen from the BOPTEST project is [`bestest_air`](https://ibpsa.github.io/project1-boptest/testcases/ibpsa/testcases_ibpsa_bestest_air/).
 
 > [!IMPORTANT]  
 > This project uses version 0.6.0 of BOPTEST and BOPTEST-gym. Be careful since BOPTEST v0.7.0 has been released recently and BOPTEST-gym is still being updated to support it, check status on [`boptest-gym issue#155`](https://github.com/ibpsa/project1-boptest-gym/issues/155)
@@ -12,6 +12,10 @@ Welcome to the **HVAC control with DQN** project! This repository demonstrates h
 - **Phase 2**: A more complex agent learns to balance thermal comfort and energy efficiency.
 
 📂 **Check out the full training process**: Dive into the details by opening [`main.ipynb`](./main.ipynb).
+
+> [!NOTE]  
+> Some modifications where made to `boptestGymEnv.py` and `test_and_plot.py` since as stated on [`boptest-gym issue#104`](https://github.com/ibpsa/project1-boptest-gym/issues/104) the rendering functionality is only working for one test case which isn't the chosen one for this project. Apart from adapting the plots to `bestest_air` test case, changes on `boptestGymEnv.py` were made to allow for visualization of the KPIs during the different episodes. This is going to be available when running the notebook since the [BOPTEST-Gym repository](https://ibpsa.github.io/project1-boptest/) is automatically cloned and [`boptest-gym.patch`](./boptest-gym.patch), which contains the changes, is applied.
+
 
 ### Results
 Below are the results showcasing the thermal discomfort (in blue) and energy utilitzation (in red) of the two agents during their training episodes.
