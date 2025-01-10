@@ -19,12 +19,12 @@ Below are the results showcasing the thermal discomfort (in blue) and energy uti
 
 #### First agent (Thermal discomfort optimization)
 <p>
-  <img src="./images/first_agent.png" alt="First Agent" width="40%">
+  <img src="./images/first_agent.png" alt="First Agent" width="65%">
 </p>
 
 #### Second agent (Thermal discomfort + Energy efficiency optimization)
 <p>
-  <img src="./images/second_agent.png" alt="Second Agent" width="40%">
+  <img src="./images/second_agent.png" alt="Second Agent" width="65%">
 </p>
 
 ## 🚀 Getting started
