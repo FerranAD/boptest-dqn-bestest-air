@@ -1,0 +1,136 @@
+From ec24a3f95ce9cfd96ba986c5d6774875972aea4d Mon Sep 17 00:00:00 2001
+From: Ferran Aran <ferran@ferranaran.com>
+Date: Fri, 10 Jan 2025 12:40:56 +0100
+Subject: [PATCH] refactor: adapt to bestest_air test case
+
+---
+ boptestGymEnv.py          | 10 ++++++++
+ examples/test_and_plot.py | 48 +++++++++++++++++++--------------------
+ 2 files changed, 34 insertions(+), 24 deletions(-)
+
+diff --git a/boptestGymEnv.py b/boptestGymEnv.py
+index 307183d..8bd0854 100644
+--- a/boptestGymEnv.py
++++ b/boptestGymEnv.py
+@@ -25,6 +25,8 @@ from stable_baselines3.common.callbacks import BaseCallback
+ 
+ from examples.test_and_plot import plot_results, test_agent
+ 
++from collections import deque
++
+ class BoptestGymEnv(gym.Env):
+     '''
+     BOPTEST Environment that follows gym interface.
+@@ -152,6 +154,10 @@ class BoptestGymEnv(gym.Env):
+         self.scenario           = scenario
+         self.render_episodes    = render_episodes
+         self.log_dir            = log_dir
++
++        # Better KPI logging
++        self.kpis = deque(maxlen=2)
++        self.episode_kpis = []
+         
+         # Avoid requesting data before the beginning of the year
+         if self.regressive_period is not None:
+@@ -590,6 +596,9 @@ class BoptestGymEnv(gym.Env):
+         observations = self.get_observations(res)
+         
+         # Render episode if finished and requested
++        if (terminated or truncated):
++            self.episode_kpis.append(self.kpis[0])
++            self.kpis.clear()
+         if (terminated or truncated) and self.render_episodes:
+             self.render()
+         
+@@ -647,6 +656,7 @@ class BoptestGymEnv(gym.Env):
+         
+         # Compute BOPTEST core kpis
+         kpis = requests.get('{0}/kpi/{1}'.format(self.url,self.testid)).json()['payload']
++        self.kpis.append(kpis)
+         
+         # Calculate objective integrand function at this point
+         objective_integrand = kpis['cost_tot'] + w*kpis['tdis_tot']
+diff --git a/examples/test_and_plot.py b/examples/test_and_plot.py
+index 258f485..a458779 100644
+--- a/examples/test_and_plot.py
++++ b/examples/test_and_plot.py
+@@ -68,8 +68,8 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
+     
+     return observations, actions, rewards, kpis
+ 
+-def plot_results(env, rewards, points=['reaTZon_y','reaTSetHea_y','reaTSetCoo_y','oveHeaPumY_u',
+-                                       'weaSta_reaWeaTDryBul_y', 'weaSta_reaWeaHDirNor_y'],
++def plot_results(env, rewards, points=['zon_reaTRooAir_y','con_oveTSetHea_u','con_oveTSetCoo_u','fcu_oveTSup_u',
++                                       ],
+                  log_dir=os.getcwd(), model_name='last_model', save_to_file=False):
+     
+ 
+@@ -106,43 +106,43 @@ def plot_results(env, rewards, points=['reaTZon_y','reaTSetHea_y','reaTSetCoo_y'
+     
+     if not plt.get_fignums():
+         # no window(s) are open, so open a new window. 
+-        _, axs = plt.subplots(4, sharex=True, figsize=(8,6))
++        _, axs = plt.subplots(2, sharex=True, figsize=(8,6))
+     else:
+         # There is a window open, so get current figure. 
+         # Combine this with plt.ion(), plt.figure()
+         fig = plt.gcf()
+-        axs = fig.subplots(nrows=4, ncols=1, sharex=True)
++        axs = fig.subplots(nrows=2, ncols=1, sharex=True)
+             
+     x_time = df.index.to_pydatetime()
+ 
+-    axs[0].plot(x_time, df['reaTZon_y']  -273.15, color='darkorange',   linestyle='-', linewidth=1, label='_nolegend_')
+-    axs[0].plot(x_time, df['reaTSetHea_y'] -273.15, color='gray',       linewidth=1, label='Comfort setp.')
+-    axs[0].plot(x_time, df['reaTSetCoo_y'] -273.15, color='gray',       linewidth=1, label='_nolegend_')
++    axs[0].plot(x_time, df['zon_reaTRooAir_y']  -273.15, color='darkorange',   linestyle='-', linewidth=1, label='_nolegend_')
++    axs[0].plot(x_time, df['con_oveTSetHea_u'] -273.15, color='steelblue',       linewidth=1, label='Comfort setp.')
++    axs[0].plot(x_time, df['con_oveTSetCoo_u'] -273.15, color='indianred',       linewidth=1, label='_nolegend_')
+     axs[0].set_yticks(np.arange(15, 31, 5))
+     axs[0].set_ylabel('Operative\ntemperature\n($^\circ$C)')
+     
+-    axs[1].plot(x_time, df['oveHeaPumY_u'],   color='darkorange',     linestyle='-', linewidth=1, label='_nolegend_')
+-    axs[1].set_ylabel('Heat pump\nmodulation\nsignal\n( - )')
++    axs[1].plot(x_time, df['fcu_oveTSup_u'] -273.15,   color='lightslategray',     linestyle='-', linewidth=1, label='_nolegend_')
++    axs[1].set_ylabel('Supply air\ntemperature\nsetpoint\n( - )')
+     
+-    axs[2].plot(x_time, rewards_reindexed, 'b', linewidth=1, label='rewards')
+-    axs[2].set_ylabel('Rewards\n(-)')
++    # axs[2].plot(x_time, rewards_reindexed, 'b', linewidth=1, label='rewards')
++    # axs[2].set_ylabel('Rewards\n(-)')
+     
+-    axs[3].plot(x_time, df['weaSta_reaWeaTDryBul_y'] - 273.15, color='royalblue', linestyle='-', linewidth=1, label='_nolegend_')
+-    axs[3].set_ylabel('Ambient\ntemperature\n($^\circ$C)')
+-    axs[3].set_yticks(np.arange(-5, 16, 5))
+-    axt = axs[3].twinx()
++    # axs[3].plot(x_time, df['weaSta_reaWeaTDryBul_y'] - 273.15, color='royalblue', linestyle='-', linewidth=1, label='_nolegend_')
++    # axs[3].set_ylabel('Ambient\ntemperature\n($^\circ$C)')
++    # axs[3].set_yticks(np.arange(-5, 16, 5))
++    axt = axs[1].twinx()
+     
+-    axt.plot(x_time, df['weaSta_reaWeaHDirNor_y'], color='gold', linestyle='-', linewidth=1, label='$\dot{Q}_rad$')
+-    axt.set_ylabel('Solar\nirradiation\n($W$)')
++    # axt.plot(x_time, df['weaSta_reaWeaHDirNor_y'], color='gold', linestyle='-', linewidth=1, label='$\dot{Q}_rad$')
++    # axt.set_ylabel('Solar\nirradiation\n($W$)')
+     
+-    axs[3].plot([],[], color='darkorange',  linestyle='-', linewidth=1, label='RL')
+-    axs[3].plot([],[], color='dimgray',     linestyle='dotted', linewidth=1, label='Price')
+-    axs[3].plot([],[], color='royalblue',   linestyle='-', linewidth=1, label='$T_a$')
+-    axs[3].plot([],[], color='gold',        linestyle='-', linewidth=1, label='$\dot{Q}_{rad}$')
+-    axs[3].legend(fancybox=True, ncol=6, bbox_to_anchor=(1.06, -0.3)) 
+-    
+-    axs[3].xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
++    axs[1].plot([],[], color='darkorange',  linestyle='-', linewidth=1, label='Zone temperature')
++    axs[1].plot([],[], color='steelblue',     linestyle='-', linewidth=1, label='Heating SP')
++    axs[1].plot([],[], color='indianred',   linestyle='-', linewidth=1, label='Cooling SP')
++    # axs[1].plot([],[], color='lightslategray', linestyle='-', linewidth=1, label='Suply air temp SP')
++    axs[1].legend(fancybox=True, ncol=6, bbox_to_anchor=(1.06, -0.3)) 
+     
++    axs[1].xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
++
+     plt.tight_layout()
+     
+     if save_to_file:
+-- 
+2.47.0
+
